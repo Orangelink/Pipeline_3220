@@ -3,7 +3,7 @@ Pipelined Processor on FPGA for CS3220
 
 TODOS:
 
-1. Writeback Functionality 
+1. Writeback Functionality
 
 2. Controller
 
@@ -11,5 +11,4 @@ TODOS:
 
 4. Branch Functionality
 
-5. Branch Prediction
-
+5. Branch Prediction (Options: Bimodal, G-share)
