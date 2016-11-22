@@ -76,6 +76,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    wire [DBITS - 1:0] condRegResult;           // ALU condition flag result zero-extended
    wire [DBITS - 1:0] dataMemOut;              // Data memory output
    wire [9:0] debounced_SW;                    // debounced switches
+	wire MEM_Mux_sel;
 	
 	
 	//Pipeline Registers
@@ -318,6 +319,12 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    // KEYS, SWITCHES, HEXS, and LEDS are memory mapped IO
 
 	//NEW PIPELINE MUX
-	wire[DBITS:0] MEM_result;
+	wire[DBITS -1 :0] MEM_result;
 	Multiplexer2bit #(DBITS) ME_Mux(dataMemOut, EX_aluResult, MEM_Mux_sel, MEM_result);
+	
+	//TODO: Writeback Logic
+	wire[DBITS - 1:0] WB_data;
+	wire[REG_INDEX_BIT_WIDTH-1 : 0] WB_reg;
+	assign WB_data = ME_MEM_result;
+	assign WB_reg = ME_EX_rd;
 endmodule
