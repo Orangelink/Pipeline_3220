@@ -201,7 +201,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	
 	//EX_wrMem
 	wire EX_wrMem;
-	assign EX_wrMem = EX_OUT[0]; 
+	assign EX_wrMem = EX_out[0]; 
 	
 	//MEMORY register
 	wire ME_wrt_en;
@@ -299,6 +299,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    RegisterFile #(DBITS) regFile(clk, reset, wrReg, regWriteNo, regRead1No,
                                  regRead2No, regData1, regData2, wrRegData);
 
+	//TODO: Change this to something that actually works for a pipeline design									 
    // Assign destination register data
    assign condRegResult = {{DBITS - 1{1'b0}} ,{condFlag}};
    Multiplexer4bit #(DBITS) dstRegMux(aluResult, dataMemOut, pcIncremented,
@@ -308,12 +309,12 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    Alu #(DBITS) procAlu(a, b, DEC_aluOp, DEC_cmpOp, condFlag, aluResult);
 
    // Assign ALU inputs
-   assign a = regData1;
-   Multiplexer4bit #(DBITS) alu2Mux(regData2, immval, 32'b0, 32'b0, alu2MuxSel, b);
+   assign a = DEC_regData1;
+   Multiplexer4bit #(DBITS) alu2Mux(DEC_regData2, immval, 32'b0, 32'b0, DEC_alu2MuxSel, b);
 
    // Create Data Memory
    DataMemory #(IMEM_INIT_FILE)
-      datamem(clk, wrMem, aluResult, regData2, debounced_SW, KEY, LEDR, hex, dataMemOut);
+      datamem(clk, EX_wrMem, EX_aluResult, EX_regData2, debounced_SW, KEY, LEDR, hex, dataMemOut);
    // KEYS, SWITCHES, HEXS, and LEDS are memory mapped IO
 
 	//NEW PIPELINE MUX
