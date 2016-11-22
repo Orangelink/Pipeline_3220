@@ -98,6 +98,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	assign IF_instWord = IF_out[DBITS - 1:0];
 	
 	//DECODE
+	//TODO: add opcode and func values to pass to rest of stages for use with controller
 	wire DEC_wrt_en;
 	wire[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : 0] DEC_in, DEC_out;
 	//DEC PC
@@ -324,7 +325,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	Multiplexer2bit #(DBITS) ME_Mux(dataMemOut, EX_aluResult, MEM_Mux_sel, MEM_result);
 	
 	//TODO: Writeback Logic
-	//Need to funnel this information back to register file and to prior stages
+	//Need to funnel this information back to register file and to prior stages. Controller handled probably
 	wire[DBITS - 1:0] WB_data;
 	wire[REG_INDEX_BIT_WIDTH-1 : 0] WB_reg;
 	assign WB_data = ME_MEM_result;
