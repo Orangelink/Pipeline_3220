@@ -2,9 +2,14 @@
 Pipelined Processor on FPGA for CS3220
 
 TODOS:
-Writeback Functionality 
-Data Forwarding
-Branch Functionality
-Branch Prediction
-Controller
-Proper Wiring
+
+1. Writeback Functionality 
+
+2. Controller
+
+3. Data Forwarding
+
+4. Branch Functionality
+
+5. Branch Prediction
+

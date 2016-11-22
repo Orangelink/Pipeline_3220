@@ -311,7 +311,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 
    // Assign ALU inputs
    assign a = DEC_regData1;
-   Multiplexer4bit #(DBITS) alu2Mux(DEC_regData2, immval, 32'b0, 32'b0, DEC_alu2MuxSel, b);
+   Multiplexer4bit #(DBITS) alu2Mux(DEC_regData2, DEC_immval, 32'b0, 32'b0, DEC_alu2MuxSel, b);
 
    // Create Data Memory
    DataMemory #(IMEM_INIT_FILE)
@@ -319,10 +319,12 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    // KEYS, SWITCHES, HEXS, and LEDS are memory mapped IO
 
 	//NEW PIPELINE MUX
+	//TODO: logic for MEM_Mux_sel-- probably needs to be handled in controller
 	wire[DBITS -1 :0] MEM_result;
 	Multiplexer2bit #(DBITS) ME_Mux(dataMemOut, EX_aluResult, MEM_Mux_sel, MEM_result);
 	
 	//TODO: Writeback Logic
+	//Need to funnel this information back to register file and to prior stages
 	wire[DBITS - 1:0] WB_data;
 	wire[REG_INDEX_BIT_WIDTH-1 : 0] WB_reg;
 	assign WB_data = ME_MEM_result;
