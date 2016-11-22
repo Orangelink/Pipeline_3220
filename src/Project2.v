@@ -98,11 +98,15 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	
 	//DECODE
 	wire DEC_wrt_en;
-	wire[DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : 0] DEC_in, DEC_out;
+	wire[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : 0] DEC_in, DEC_out;
 	//DEC PC
-	assign DEC_in[DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = IF_pcOut;
+	assign DEC_in[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS *3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = IF_pcOut;
 	//DEC signex
-	assign DEC_in[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = immval;
+	assign DEC_in[DBITS * 3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = immval;
+	//DEC regData1
+	assign DEC_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = regData1;
+	//DEC regData2
+	assign DEC_in[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = regData2;
 	//DEC src_reg1
 	assign DEC_in[REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 2] = rs1;
 	//DEC src_reg2
@@ -122,14 +126,20 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//DEC alu2srcsel
 	assign DEC_in[1:0] = alu2MuxSel;
 	
-	Register #((DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2), 0) DECreg(clk, reset, DEC_wrt_en, DEC_in, DEC_out);
+	Register #((DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2), 0) DECreg(clk, reset, DEC_wrt_en, DEC_in, DEC_out);
 	
 	//DEC out PC
 	wire[DBITS - 1:0] DEC_pc;
-	assign DEC_pc = DEC_out[DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
+	assign DEC_pc = DEC_out[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS*3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
 	//DEC out signex
 	wire [DBITS - 1:0] DEC_immval;
-	assign DEC_immval = DEC_out[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
+	assign DEC_immval = DEC_out[DBITS*3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
+	//DEC regdata1
+	wire [DBITS - 1:0] DEC_regData1;
+	assign DEC_regData1 = DEC_out[DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
+	//DEC regdata2
+	wire [DBITS - 1:0] DEC_regData2;
+	assign DEC_regData2 = DEC_out[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
 	//DEC src_reg1
 	wire [REG_INDEX_BIT_WIDTH - 1:0] DEC_rs1;
 	assign DEC_rs1 = DEC_out[REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 2];
@@ -143,8 +153,8 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	wire[3:0] DEC_aluOp;
 	assign DEC_aluOp = DEC_out[(4*2) + 1 + 1 + 2 : (4) + 1 + 1 + 1 + 2];
 	//DEC cmpOP
-	wire[3:0] DEC_cmpOP;
-	assign DEC_cmpOP = DEC_out[(4) + 1 + 1 + 2 : 1 + 1 + 1 + 2];
+	wire[3:0] DEC_cmpOp;
+	assign DEC_cmpOp = DEC_out[(4) + 1 + 1 + 2 : 1 + 1 + 1 + 2];
 	//DEC wrReg
 	wire DEC_wrReg;
 	assign DEC_wrReg = DEC_out[1+1+2];
@@ -295,7 +305,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
                                       condRegResult, dstRegMuxSel, wrRegData);
 
    // Create ALU unit
-   Alu #(DBITS) procAlu(a, b, aluOp, cmpOp, condFlag, aluResult);
+   Alu #(DBITS) procAlu(a, b, DEC_aluOp, DEC_cmpOp, condFlag, aluResult);
 
    // Assign ALU inputs
    assign a = regData1;
