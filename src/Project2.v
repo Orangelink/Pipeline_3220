@@ -77,6 +77,11 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    wire [DBITS - 1:0] dataMemOut;              // Data memory output
    wire [9:0] debounced_SW;                    // debounced switches
 	wire MEM_Mux_sel;
+	wire [3:0] IF_op, IF_func;
+	wire [3:0] DEC_op, DEC_func;
+	wire [3:0] EX_op, EX_func;
+	wire [3:0] MEM_op, MEM_func;
+	wire [3:0] WB_op, WB_func;
 	
 	
 	//Pipeline Registers
@@ -96,6 +101,9 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//IF out instword
 	wire[DBITS - 1:0] IF_instWord;
 	assign IF_instWord = IF_out[DBITS - 1:0];
+	//IF opcode and function for branch purposes
+	assign IF_op = IF_instword[DBITS-1:DBITS-4];
+	assign IF_func = IF_instword[DBITS-5:DBITS-8];
 	
 	//DECODE
 	//TODO: add opcode and func values to pass to rest of stages for use with controller
@@ -115,10 +123,10 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	assign DEC_in[REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 1 + (4*2) + 1 + 1 + 1 + 2] = rs2;
 	//DEC dst_reg
 	assign DEC_in[REG_INDEX_BIT_WIDTH + (4*2) + 1 + 1 + 2 : (4*2) + 1 + 1 + 1 + 2] = rd;
-	//DEC aluOp
-	assign DEC_in[(4*2) + 1 + 1 + 2 : 4 + 1 + 1 + 1 + 2] = aluOp;
-	//DEC cmpOp
-	assign DEC_in[4 + 1 + 1 + 2 : 1 + 1 + 1 + 2] = cmpOp;
+	//DEC OP
+	assign DEC_in[(4*2) + 1 + 1 + 2 : 4 + 1 + 1 + 1 + 2] = opcode;
+	//DEC FUNC
+	assign DEC_in[4 + 1 + 1 + 2 : 1 + 1 + 1 + 2] = func;
 	//DEC wrReg
 	assign DEC_in[1+1+2] = wrReg;
 	//DEC wrMem
@@ -151,12 +159,12 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//DEC dst_reg
 	wire [REG_INDEX_BIT_WIDTH - 1:0] DEC_rd;
 	assign DEC_rd = DEC_out[REG_INDEX_BIT_WIDTH + (4*2) + 1 + 1 + 2 : (4*2) + 1 + 1 + 1 + 2];
-	//DEC aluOp
+	//DEC Op
 	wire[3:0] DEC_aluOp;
-	assign DEC_aluOp = DEC_out[(4*2) + 1 + 1 + 2 : (4) + 1 + 1 + 1 + 2];
-	//DEC cmpOP
+	assign DEC_op = DEC_out[(4*2) + 1 + 1 + 2 : (4) + 1 + 1 + 1 + 2];
+	//DEC func
 	wire[3:0] DEC_cmpOp;
-	assign DEC_cmpOp = DEC_out[(4) + 1 + 1 + 2 : 1 + 1 + 1 + 2];
+	assign DEC_func = DEC_out[(4) + 1 + 1 + 2 : 1 + 1 + 1 + 2];
 	//DEC wrReg
 	wire DEC_wrReg;
 	assign DEC_wrReg = DEC_out[1+1+2];
@@ -308,7 +316,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
                                       condRegResult, dstRegMuxSel, wrRegData);
 
    // Create ALU unit
-   Alu #(DBITS) procAlu(a, b, DEC_aluOp, DEC_cmpOp, condFlag, aluResult);
+   Alu #(DBITS) procAlu(a, b, aluOp, cmpOp, condFlag, aluResult);
 
    // Assign ALU inputs
    assign a = DEC_regData1;
