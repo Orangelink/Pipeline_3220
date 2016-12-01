@@ -94,7 +94,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//IF instWord
 	assign IF_in[DBITS -1:0] = instWord;
 	
-	Register #(DBITS * 2 - 1, 0) IFreg(clk, reset, IF_wrt_en, IF_in, IF_out);
+	Register #(DBITS * 2, 0) IFreg(clk, reset, IF_wrt_en, IF_in, IF_out);
 	
 	//IF out pc
 	wire [DBITS - 1:0] IF_pcout;
@@ -136,7 +136,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//DEC alu2srcsel
 	assign DEC_in[1:0] = alu2MuxSel;
 	
-	Register #((DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2), 0) DECreg(clk, reset, DEC_wrt_en, DEC_in, DEC_out);
+	Register #((DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2), 0) DECreg(clk, reset, DEC_wrt_en, DEC_in, DEC_out);
 	
 	//DEC out PC
 	wire[DBITS - 1:0] DEC_pc;
@@ -190,7 +190,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	assign EX_in[1 + 1] = DEC_ME_mux_sel;
 	assign EX_in[1] = DEC_wrReg;
 	assign EX_in[0] = DEC_wrMem;
-	Register #((4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 + 1), 0) EXreg(clk, reset, EX_wrt_en, EX_in, EX_out);
+	Register #((4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 + 1 + 1), 0) EXreg(clk, reset, EX_wrt_en, EX_in, EX_out);
 	
 	//ME_op
 	wire[3:0] ME_op;
@@ -234,7 +234,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	assign ME_in[DBITS + REG_INDEX_BIT_WIDTH: REG_INDEX_BIT_WIDTH + 1] = MEM_result;
 	assign ME_in[REG_INDEX_BIT_WIDTH: 1] = EX_rd;
 	assign ME_in[0] = EX_wrReg; 
-	Register #((DBITS + REG_INDEX_BIT_WIDTH + 1), 0) MEreg(clk, reset, ME_wrt_en, ME_in, ME_out);
+	Register #((DBITS + REG_INDEX_BIT_WIDTH + 2 + (4 * 2)), 0) MEreg(clk, reset, ME_wrt_en, ME_in, ME_out);
 	
 	//ME_op
 	wire [3:0] WB_op;
