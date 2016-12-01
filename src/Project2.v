@@ -77,39 +77,40 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    wire [DBITS - 1:0] dataMemOut;              // Data memory output
    wire [9:0] debounced_SW;                    // debounced switches
 	wire MEM_Mux_sel;
+	wire[3:0] EX_op, EX_func;
 	
 	
 	//Pipeline Registers
 	//IF opcode and function for branch purposes
 	wire [3:0] IF_op, IF_func;
-	assign IF_op = instword[DBITS-1:DBITS-4];
-	assign IF_func = instword[DBITS-5:DBITS-8];
+	assign IF_op = instWord[DBITS-1:DBITS-4];
+	assign IF_func = instWord[DBITS-5:DBITS-8];
 	
 	//IF
 	wire IF_wrt_en;
 	wire[DBITS*2 - 1: 0] IF_in, IF_out;
 	//IF PC
 	assign IF_in[DBITS*2 - 1:DBITS] = pcIncremented;
-	//IF instword
+	//IF instWord
 	assign IF_in[DBITS -1:0] = instWord;
 	
 	Register #(DBITS * 2 - 1, 0) IFreg(clk, reset, IF_wrt_en, IF_in, IF_out);
 	
 	//IF out pc
 	wire [DBITS - 1:0] IF_pcout;
-	assign IF_pcOut = IF_out[DBITS*2 - 1:DBITS];
-	//IF out instword
+	assign IF_pcout = IF_out[DBITS*2 - 1:DBITS];
+	//IF out instWord
 	wire[DBITS - 1:0] IF_instWord;
 	assign IF_instWord = IF_out[DBITS - 1:0];
-	assign DEC_op = IF_instword[DBITS-1:DBITS-4];
-	assign DEC_func = IF_instword[DBITS-5:DBITS-8];
+	assign DEC_op = IF_instWord[DBITS-1:DBITS-4];
+	assign DEC_func = IF_instWord[DBITS-5:DBITS-8];
 	
 	//DECODE
 	//TODO: add opcode and func values to pass to rest of stages for use with controller
 	wire DEC_wrt_en;
 	wire[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : 0] DEC_in, DEC_out;
 	//DEC PC
-	assign DEC_in[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS *3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = IF_pcOut;
+	assign DEC_in[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS *3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = IF_pcout;
 	//DEC signex
 	assign DEC_in[DBITS * 3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = immval;
 	//DEC regData1
@@ -131,7 +132,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//DEC wrMem
 	assign DEC_in[1+2] = wrMem;
 	//DEC ME_mux_sel
-	assign DEC_in[2] = MEM_mux_sel;
+	assign DEC_in[2] = MEM_Mux_sel;
 	//DEC alu2srcsel
 	assign DEC_in[1:0] = alu2MuxSel;
 	
@@ -170,7 +171,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//DEC wrMem
 	wire DEC_wrMem;
 	assign DEC_wrMem = DEC_out[1+2];
-	//DEC MEM_mux_sel
+	//DEC MEM_Mux_sel
 	wire DEC_ME_mux_sel;
 	assign DEC_ME_mux_sel = DEC_out[2];
 	//DEC alu2srcsel
@@ -179,24 +180,28 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	
 	//EXECUTE
 	wire EX_wrt_en;
-	wire[8 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 0] EX_in, EX_out;
-	assign EX_in[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_func;
-	assign EX_in[ 4 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_op;
-	assign EX_in[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_intermediateResult; 
+	wire[8 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 0] EX_in, EX_out;
+	assign EX_in[4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_func;
+	assign EX_in[ 4 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_op;
+	assign EX_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_intermediateResult; 
+	assign EX_in[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = regData2;
 	assign EX_in[REG_INDEX_BIT_WIDTH * 2 + 1 + 1:REG_INDEX_BIT_WIDTH * 1 + 1 + 1 + 1] = DEC_rs2;
 	assign EX_in[REG_INDEX_BIT_WIDTH * 1 + 1 + 1: 1 + 1 + 1] = DEC_rd; 
 	assign EX_in[1 + 1] = DEC_ME_mux_sel;
 	assign EX_in[1] = DEC_wrReg;
 	assign EX_in[0] = DEC_wrMem;
-	Register #((4 * 2 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 + 1), 0) EXreg(clk, reset, EX_wrt_en, EX_in, EX_out);
+	Register #((4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 + 1), 0) EXreg(clk, reset, EX_wrt_en, EX_in, EX_out);
 	
 	//ME_op
 	wire[3:0] ME_op;
-	assign ME_op = EX_out[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
+	assign ME_op = EX_out[4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
 	//ME_func
 	wire[3:0] ME_func;
-	assign ME_func = EX_out[4 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
+	assign ME_func = EX_out[4 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
 
+	//EX_regdata2
+	wire[DBITS-1:0] EX_regData2;
+	assign EX_regData2 = EX_out[DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
 	//EX_aluResult
 	wire [DBITS-1:0] EX_aluResult;
 	assign EX_aluResult = EX_out[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
@@ -245,7 +250,8 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	assign ME_EX_rd = ME_out[REG_INDEX_BIT_WIDTH: 1];
 	
 	//ME_EX_wrReg
-	assign wrReg = ME_out[0]; 
+	wire ME_wrReg;
+	assign ME_wrReg = ME_out[0]; 
 	
 	
    // Clock divider and reset
@@ -323,8 +329,8 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
                                .wrReg           (wrReg),
                                .wrMem           (wrMem),
                                .dstRegMux       (dstRegMuxSel[1:0]),
-										 .MEM_Mux_sel     (MEM_Mux_sel);
-										 )
+										 .MEM_Mux_sel     (MEM_Mux_sel)
+										 );
 
    // Create the register file
    assign regWriteNo = WB_reg;
@@ -332,13 +338,13 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    Multiplexer2bit #(4) rs1Mux(rs1, rd, rs1MuxSel, regRead1No);
    Multiplexer4bit #(4) rs2Mux(rs2, rd, rs1, 4'b0, rs2MuxSel, regRead2No);
    
-   RegisterFile #(DBITS) regFile(clk, reset, wrReg, regWriteNo, regRead1No,
+   RegisterFile #(DBITS) regFile(clk, reset, ME_wrReg, regWriteNo, regRead1No,
                                  regRead2No, regData1, regData2, wrRegData);
 
 	//DONE IN VERY HACKY WAY, CHECK HERE IF SOMETHING DOESN'T WORK
    // Assign destination register data
    assign condRegResult = {{DBITS - 1{1'b0}} ,{condFlag}};
-	wire EX_intermediateResult[DBITS -1 : 0];
+	wire[DBITS -1 : 0] EX_intermediateResult;
    Multiplexer4bit #(DBITS) dstRegMux(aluResult, aluResult, DEC_pc,
                                       condRegResult, dstRegMuxSel, EX_intermediateResult);
 
