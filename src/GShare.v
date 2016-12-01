@@ -21,7 +21,7 @@ module GShare(predictPc, updatePc, clk, predict, update, reality, prediction);
 	always @ (posedge clk) begin
 		if (predict == 1) begin
 			predictionReg <= lookup[predictPc ^ gHistory];
-			gHistory[11:1] <= gHistory[10:0];
+			gHistory[11:1] = gHistory[10:0];
 			gHistory[0] <= predictionReg[1];
 		end
 		if (update == 1) begin
