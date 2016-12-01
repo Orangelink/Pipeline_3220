@@ -292,7 +292,9 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    // Take branch if allowed AND condition flag is true
 	// DEAL WITH BRANCH PREDICTION STUFF HERE
 	//replace condflag with prediction, probably
-   assign takeBr = allowBr & condFlag;
+	wire prediction;
+	GShare branchPredictor(pcOut, (DEC_pc - 4), clk, allowBr, update, condFlag, prediction)
+   assign takeBr = prediction;
    Multiplexer2bit #(DBITS) nextPcMux(pcIncremented, brBaseOffset, takeBr, pcIn);
 
    // Create instruction memory
