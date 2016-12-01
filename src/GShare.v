@@ -9,8 +9,9 @@ module GShare(predictPc, updatePc, clk, predict, update, reality, prediction);
 	
 	reg[1:0] lookup [0:tableLength - 1];
 	reg[11:0] gHistory;
+	integer i;
+	
 	initial begin
-		integer i;
 		for(i = 0; i < tableLength; i = i + 1) begin
 			lookup[i] <= 2'b10;
 		end
@@ -21,20 +22,20 @@ module GShare(predictPc, updatePc, clk, predict, update, reality, prediction);
 	always @ (posedge clk) begin
 		if (predict == 1) begin
 			predictionReg <= lookup[predictPc ^ gHistory];
-			gHistory[11:1] = gHistory[10:0];
-			gHistory[0] <= predictionReg[1];
 		end
 		if (update == 1) begin
 			if (reality == 1) begin
 				if(lookup[updatePc ^ gHistory] < 3) begin
-					lookup[updatePc ^ gHistory] <= lookup[updatePc ^ gHistory] + 1; 
+					lookup[updatePc ^ gHistory] <= lookup[updatePc ^ gHistory] + 2'b01;
 				end
 			end
 			else if (reality == 0) begin
 				if(lookup[updatePc ^ gHistory] > 0) begin
-					lookup[updatePc ^ gHistory] <= lookup[updatePc ^ gHistory] - 1;
+					lookup[updatePc ^ gHistory] <= lookup[updatePc ^ gHistory] - 2'b01;
 				end
 			end
+			gHistory[11:1] = gHistory[10:0];
+			gHistory[0] <= reality;
 		end
 	end
 	
