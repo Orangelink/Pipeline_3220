@@ -89,7 +89,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	wire IF_wrt_en;
 	wire[DBITS*2 - 1: 0] IF_in, IF_out;
 	//IF PC
-	assign IF_in[DBITS*2 - 1:DBITS] = pcOut;
+	assign IF_in[DBITS*2 - 1:DBITS] = pcIncremented;
 	//IF instword
 	assign IF_in[DBITS -1:0] = instWord;
 	
@@ -182,7 +182,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	wire[8 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 0] EX_in, EX_out;
 	assign EX_in[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_func;
 	assign EX_in[ 4 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_op;
-	assign EX_in[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = aluResult; 
+	assign EX_in[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_intermediateResult; 
 	assign EX_in[REG_INDEX_BIT_WIDTH * 2 + 1 + 1:REG_INDEX_BIT_WIDTH * 1 + 1 + 1 + 1] = DEC_rs2;
 	assign EX_in[REG_INDEX_BIT_WIDTH * 1 + 1 + 1: 1 + 1 + 1] = DEC_rd; 
 	assign EX_in[1 + 1] = DEC_ME_mux_sel;
@@ -245,8 +245,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	assign ME_EX_rd = ME_out[REG_INDEX_BIT_WIDTH: 1];
 	
 	//ME_EX_wrReg
-	wire ME_EX_wrReg;
-	assign ME_EX_wrReg = ME_out[0]; 
+	assign wrReg = ME_out[0]; 
 	
 	
    // Clock divider and reset
@@ -301,7 +300,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    Shiftbit #(DBITS, 2) instOffsetShift(immval, instOffset);
 
    // Controller examines opcode, func, and ALU condition to generate control signals
-   SCProcController controller(
+   PipelineController controller(
                                // Inputs
                                .IF_op           (IF_op[3:0]),
                                .IF_func         (IF_func[3:0]),
@@ -317,7 +316,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
                                .allowBr         (allowBr),
                                .brBaseMux       (brBaseMuxSel),
                                .rs1Mux          (rs1MuxSel),
-                               .rs2Mux          (rs2MuxSel),
+                               .rs2Mux          (rs2MuxSel[1:0]),
                                .alu2Mux         (alu2MuxSel[1:0]),
                                .aluOp           (aluOp[3:0]),
                                .cmpOp           (cmpOp[3:0]),
@@ -325,20 +324,23 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
                                .wrMem           (wrMem),
                                .dstRegMux       (dstRegMuxSel[1:0]),
 										 .MEM_Mux_sel     (MEM_Mux_sel);
+										 )
 
    // Create the register file
-   assign regWriteNo = rd;
+   assign regWriteNo = WB_reg;
+	assign wrRegData = WB_data;
    Multiplexer2bit #(4) rs1Mux(rs1, rd, rs1MuxSel, regRead1No);
    Multiplexer4bit #(4) rs2Mux(rs2, rd, rs1, 4'b0, rs2MuxSel, regRead2No);
    
    RegisterFile #(DBITS) regFile(clk, reset, wrReg, regWriteNo, regRead1No,
                                  regRead2No, regData1, regData2, wrRegData);
 
-	//TODO: Change this to something that actually works for a pipeline design									 
+	//DONE IN VERY HACKY WAY, CHECK HERE IF SOMETHING DOESN'T WORK
    // Assign destination register data
    assign condRegResult = {{DBITS - 1{1'b0}} ,{condFlag}};
-   Multiplexer4bit #(DBITS) dstRegMux(aluResult, dataMemOut, pcIncremented,
-                                      condRegResult, dstRegMuxSel, wrRegData);
+	wire EX_intermediateResult[DBITS -1 : 0];
+   Multiplexer4bit #(DBITS) dstRegMux(aluResult, aluResult, DEC_pc,
+                                      condRegResult, dstRegMuxSel, EX_intermediateResult);
 
    // Create ALU unit
    Alu #(DBITS) procAlu(a, b, aluOp, cmpOp, condFlag, aluResult);
@@ -355,7 +357,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//NEW PIPELINE MUX
 	//TODO: logic for MEM_Mux_sel-- probably needs to be handled in controller
 	wire[DBITS -1 :0] MEM_result;
-	Multiplexer2bit #(DBITS) ME_Mux(dataMemOut, EX_aluResult, MEM_Mux_sel, MEM_result);
+	Multiplexer2bit #(DBITS) ME_Mux(EX_aluResult, dataMemOut, MEM_Mux_sel, MEM_result);
 	
 	//TODO: Writeback Logic
 	//Need to funnel this information back to register file and to prior stages. Controller handled probably
