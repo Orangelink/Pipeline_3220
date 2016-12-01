@@ -183,8 +183,8 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	wire[8 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 0] EX_in, EX_out;
 	assign EX_in[4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_func;
 	assign EX_in[ 4 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_op;
-	assign EX_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_intermediateResult; 
-	assign EX_in[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = regData2;
+	assign EX_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = regData2; 
+	assign EX_in[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_intermediateResult;
 	assign EX_in[REG_INDEX_BIT_WIDTH * 2 + 1 + 1:REG_INDEX_BIT_WIDTH * 1 + 1 + 1 + 1] = DEC_rs2;
 	assign EX_in[REG_INDEX_BIT_WIDTH * 1 + 1 + 1: 1 + 1 + 1] = DEC_rd; 
 	assign EX_in[1 + 1] = DEC_ME_mux_sel;
@@ -238,16 +238,17 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	
 	//ME_op
 	wire [3:0] WB_op;
-	assign ME_op = ME_in[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH:5 + DBITS + REG_INDEX_BIT_WIDTH];
+	assign WB_op = ME_out[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH:5 + DBITS + REG_INDEX_BIT_WIDTH];
 	//ME_func
 	wire[3:0] WB_func;
+	assign WB_func = ME_out[4 + DBITS + REG_INDEX_BIT_WIDTH:1 + DBITS + REG_INDEX_BIT_WIDTH];
 	//ME_MEM_result
 	wire [DBITS-1:0] ME_MEM_result;
 	assign ME_MEM_result = ME_out[DBITS + REG_INDEX_BIT_WIDTH: REG_INDEX_BIT_WIDTH + 1];
 	
 	//ME_EX_rd
-	wire [REG_INDEX_BIT_WIDTH-1:0] ME_EX_rd; 
-	assign ME_EX_rd = ME_out[REG_INDEX_BIT_WIDTH: 1];
+	wire [REG_INDEX_BIT_WIDTH-1:0] ME_rd; 
+	assign ME_rd = ME_out[REG_INDEX_BIT_WIDTH: 1];
 	
 	//ME_EX_wrReg
 	wire ME_wrReg;
@@ -289,6 +290,8 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    Adder #(DBITS) brOffsetAdder(brBase, instOffset, brBaseOffset);
 
    // Take branch if allowed AND condition flag is true
+	// DEAL WITH BRANCH PREDICTION STUFF HERE
+	//replace condflag with prediction, probably
    assign takeBr = allowBr & condFlag;
    Multiplexer2bit #(DBITS) nextPcMux(pcIncremented, brBaseOffset, takeBr, pcIn);
 
@@ -352,8 +355,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    Alu #(DBITS) procAlu(a, b, aluOp, cmpOp, condFlag, aluResult);
 
    // Assign ALU inputs
-   assign a = DEC_regData1;
-   Multiplexer4bit #(DBITS) alu2Mux(DEC_regData2, DEC_immval, 32'b0, 32'b0, DEC_alu2MuxSel, b);
+   Multiplexer4bit #(DBITS) alu2Mux(forwarded_rs2, DEC_immval, 32'b0, 32'b0, DEC_alu2MuxSel, b);
 
    // Create Data Memory
    DataMemory #(IMEM_INIT_FILE)
@@ -370,5 +372,10 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	wire[DBITS - 1:0] WB_data;
 	wire[REG_INDEX_BIT_WIDTH-1 : 0] WB_reg;
 	assign WB_data = ME_MEM_result;
-	assign WB_reg = ME_EX_rd;
+	assign WB_reg = ME_rd;
+	
+	//FORWARDING UNITS
+	wire[DBITS-1:0] forwarded_rs2;
+	forwardingUnit rs1Forward(DEC_rs1, DEC_regData1, ME_op, EX_rd, MEM_result, WB_op, WB_reg, WB_data, a);
+	forwardingUnit rs2Forward(DEC_rs2, DEC_regData2, ME_op, EX_rd, MEM_result, WB_op, WB_reg, WB_data, forwarded_rs2);
 endmodule
