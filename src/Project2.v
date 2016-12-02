@@ -329,8 +329,9 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
 	
 	//branch handler
 	//use correct in mux, use update for branch predictor
-	wire correct, update;
-	branchHandler (DEC_brBaseOffset, DEC_pc, EX_opcode, condFlag, DEC_prediction, correct, resetReg, update, clk, newBrPC);
+	wire correct, update, resetReg;
+	wire[DBITS-1:0] newBrPC;
+	branchHandler branchHandle1(DEC_brBaseOffset, DEC_pc, EX_op, condFlag, DEC_prediction, correct, resetReg, update, clk, newBrPC);
 
    // Create instruction memory
    InstMemory #(IMEM_INIT_FILE, IMEM_ADDR_BIT_WIDTH, IMEM_DATA_BIT_WIDTH)
