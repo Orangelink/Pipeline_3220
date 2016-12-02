@@ -1,16 +1,16 @@
-module EXreg(wrt_en, reset, clk, func, op, regData2, intermediateResult, rs2, rd, ME_mux_sel, wrReg, wrMem,
+module EXreg(wrt_en, reset, clk, EX_func, EX_op, regData2, intermediateResult, rs2, rd, ME_mux_sel, wrReg, wrMem,
 				 ME_func, ME_op, EX_regData2, EX_intermediateResult, EX_rs2, EX_rd, EX_ME_mux_sel, EX_wrReg, EX_wrMem); 
 
 	parameter DBITS = 32; 
 	parameter REG_INDEX_BIT_WIDTH = 4; 
 	
 	input wrt_en, reset, clk; 
-	input [3:0] func, op;
+	input [3:0] EX_func, EX_op;
 	input [DBITS-1:0] regData2, intermediateResult; 
 	input [REG_INDEX_BIT_WIDTH-1:0] rs2, rd; 
 	input ME_mux_sel, wrReg, wrMem;
 	
-	output[3:0] EX_func, EX_op;
+	output[3:0] ME_func, ME_op;
 	output[DBITS-1:0] EX_regData2, EX_intermediateResult;
 	output[REG_INDEX_BIT_WIDTH-1:0] EX_rs2, EX_rd;
 	output EX_ME_mux_sel, EX_wrReg, EX_wrMem;

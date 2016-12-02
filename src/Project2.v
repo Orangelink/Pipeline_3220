@@ -118,7 +118,6 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
 	wire DEC_wrMem;
 	wire DEC_ME_mux_sel;
 	wire[1:0] DEC_alu2MuxSel;	
-	Register #((DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2), 0) DECreg(clk, resetReg, DEC_wrt_en, DEC_in, DEC_out);
 	DECreg DECreg0(DEC_wrt_en, resetReg, clk, IF_brBaseOffset, IF_pcout, immval, regData1, regData2,
 					rs1, rs2, rd, opcode, func, IF_prediction, wrReg, wrMem, MEM_Mux_sel,
 					alu2Muxsel, DEC_brBaseOffset, DEC_pc, DEC_immval, DEC_regData1, DEC_regData2,
