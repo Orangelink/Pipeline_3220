@@ -12,11 +12,11 @@ module forwardingUnit(reg_index, reg_data, MEM_opcode, MEM_index, MEM_data, WB_o
 	reg[(bitwidth - 1) : 0] out;
 	
 	always @ (*) begin
-		if (reg_index == MEM_index && reg_index != WB_index && (MEM_opcode == `BRANCH || MEM_opcode == `SW))
+		if (reg_index == MEM_index && reg_index != WB_index && (MEM_opcode != `BRANCH && MEM_opcode != `SW))
 			out = MEM_data; 
-		else if (reg_index != MEM_index && reg_index == WB_index && (WB_opcode == `BRANCH || WB_opcode == `SW))
+		else if (reg_index != MEM_index && reg_index == WB_index && (WB_opcode != `BRANCH && WB_opcode != `SW))
 			out = WB_data;
-		else if (reg_index == MEM_index && reg_index == WB_index && (MEM_opcode == `BRANCH || MEM_opcode == `SW) && (WB_opcode == `BRANCH || WB_opcode == `SW))
+		else if (reg_index == MEM_index && reg_index == WB_index && (MEM_opcode != `BRANCH && MEM_opcode != `SW) && (WB_opcode != `BRANCH && WB_opcode != `SW))
 			out = MEM_data;
 		else 
 			out = reg_data; 
