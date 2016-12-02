@@ -40,12 +40,12 @@
 `define BGTEZ 4'b1110
 `define BGTZ 4'b1111
 module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
-								  EX_op, EX_func, MEM_op, MEM_func, WB_op, WB_func, 
+								  EX_op, EX_func, ME_op, ME_func, WB_op, WB_func, 
 								  allowBr, brBaseMux, rs1Mux, rs2Mux, alu2Mux, 
-								  aluOp, cmpOp, wrReg, wrMem, dstRegMux, ME_MEM_sel);
+								  aluOp, cmpOp, wrReg, wrMem, dstRegMux, MEM_Mux_sel);
 								  
-	input [3:0] IF_op, DEC_op, EX_op, MEM_op, WB_op;
-	input [3:0] IF_func, DEC_func, EX_func, MEM_func, WB_func;
+	input [3:0] IF_op, DEC_op, EX_op, ME_op, WB_op;
+	input [3:0] IF_func, DEC_func, EX_func, ME_func, WB_func;
 	
 	output allowBr;
    output brBaseMux;
@@ -57,18 +57,18 @@ module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
    output wrReg;
    output wrMem;
    output [1:0] dstRegMux;
-	output MEM_MUX_sel;
+	output MEM_Mux_sel;
 	
    reg [1:0] IF_output;
 	assign allowBr = IF_output[0];
 	assign brBaseMux = IF_output[1];
 	always @ (IF_op) begin
 		//allowBr
-		if IF_op == `BRANCH begin
+		if (IF_op == `BRANCH) begin
 			IF_output <= 2'b0_1;
 		end
 		//allowBr and brBaseMux
-		else if IF_op == `JAL begin
+		else if (IF_op == `JAL) begin
 			IF_output <= 2'b1_1;
 		end
 		else begin
@@ -81,10 +81,10 @@ module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
 	assign rs2Mux = DEC_output[1:0];
 	reg [2:0] DEC_output;
 	always @ (DEC_op) begin
-		if DEC_op == `BRANCH begin
+		if (DEC_op == `BRANCH) begin
 			DEC_output <= 3'b1_10;
 		end
-		else if DEC_op == `SWOP begin:
+		else if (DEC_op == `SWOP) begin
 			DEC_output <= 3'b0_01;
 		end
 		else begin
@@ -99,6 +99,7 @@ module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
    assign alu2Mux = EX_output[13:12];
    assign aluOp = EX_output[11:8];
    assign cmpOp = EX_output[7:4];
+	wire[7:0] EX_inputSignals;
    assign EX_inputSignals = {{EX_op}, {EX_func}};
 	reg [18:0] EX_output;
 	always @ (EX_inputSignals) begin
@@ -192,41 +193,41 @@ module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
 	
 	reg [1:0] MEM_output;
 	assign wrMem = MEM_output[1];
-	assign ME_MEM_sel = MEM_output[0];
-	always @ (MEM_op) begin
-		if MEM_op == `LWOP begin
-			MEM_output <= 2b'01;
+	assign MEM_Mux_sel = MEM_output[0];
+	always @ (ME_op) begin
+		if (ME_op == `LWOP) begin
+			MEM_output <= 2'b01;
 		end
-		else if MEM_op == `SWOP begin
-			MEM_output <= 2b'10;
+		else if (ME_op == `SWOP) begin
+			MEM_output <= 2'b10;
 		end
 		else begin
-			MEM_output <= 2b'00;
+			MEM_output <= 2'b00;
 		end
 	end
 
 	wire [7:0] WB_input;
 	reg [2:0] WB_output;
 	assign wrReg = WB_output[2];
-	assign DstRegMux = WB_output[1:0];
+	assign dstRegMux = WB_output[1:0];
 	always @ (WB_op) begin
-		if WB_op == `SWOP || WB_op == `BRANCH begin
-			WB_output[2] <= 1b'0;
+		if (WB_op == `SWOP || WB_op == `BRANCH) begin
+			WB_output[2] <= 1'b0;
 		end
 		else begin
-			WB_output[2] <= 1b'1;
+			WB_output[2] <= 1'b1;
 		end
-		if WB_op == `CMPR || WB_op == `CMPI begin
-			WB_output[1:0] <= 2b'11;
+		if (WB_op == `CMPR || WB_op == `CMPI) begin
+			WB_output[1:0] <= 2'b11;
 		end
-		else if WB_op == `LWOP begin
-			WB_output[1:0] <= 2b'01;
+		else if (WB_op == `LWOP) begin
+			WB_output[1:0] <= 2'b01;
 		end
-		else if WB_op == `JAL begin
-			WB_output[1:0] <= 2b'10;
+		else if (WB_op == `JAL) begin
+			WB_output[1:0] <= 2'b10;
 		end
 		else begin
-			WB_output[1:0] <= 2b'00;
+			WB_output[1:0] <= 2'b00;
 		end
 	end
 								  
