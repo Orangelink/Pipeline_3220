@@ -27,8 +27,8 @@ module TestforwardingUnit();
 		reg_data = `ZERO;
 		MEM_data = `ONE;
 		WB_data = `TWO; 
-		MEM_opcode = `BRANCH; 
-		WB_opcode = `BRANCH; 
+		MEM_opcode = `ADD; 
+		WB_opcode = `ADD; 
 		#10 
 		//TEST CASE 2: reg_index == MEM_index
 		//Expected Output: 32'b00000000000000000000000000000001
@@ -45,7 +45,7 @@ module TestforwardingUnit();
 		#10 
 		//TEST CASE 5: opcode 1100
 		//Expected Output: 32'b00000000000000000000000000000000
-		MEM_opcode = `ADD;
+		MEM_opcode = `BRANCH;
 		#10
 		//TEST CASE 6: opcode 0011
 		//Expected Output: 32'b00000000000000000000000000000001

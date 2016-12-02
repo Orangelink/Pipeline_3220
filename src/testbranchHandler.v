@@ -6,6 +6,7 @@
 module testbranchHandler();
    parameter DBITS = 32;
 	
+	reg clk; 
 	reg [(DBITS - 1):0] EX_PC_IMM, EX_PC;
 	reg [3:0] EX_opcode;
 	reg EX_condFlag;
@@ -13,11 +14,13 @@ module testbranchHandler();
 	
 	wire correctOut; 
 	wire reset; 
+	wire update; 
 	wire [(DBITS - 1):0] newPC; 
 	
-	branchHandler mybranchHandler(EX_PC_IMM, EX_PC, EX_opcode, EX_condFlag, prediction, correctOut, reset, newPC);
+	branchHandler mybranchHandler(clk, EX_PC_IMM, EX_PC, EX_opcode, EX_condFlag, prediction, correctOut, reset, update, newPC);
 
 	initial begin
+		clk = 1'b0; 
 		//Test Case 1: predict->taken, actual->taken
 		EX_PC = 32'b000000000000000000000000000100;
 		EX_PC_IMM = 32'b000000000000000000000000001000;
@@ -29,6 +32,11 @@ module testbranchHandler();
 		//reset = 0
 		//newPC = EX_PC
 		#10
+		clk = 1'b1;
+		#10
+		clk = 1'b0;
+		#1
+		clk = 1'b1;
 		//Test Case 2: predict->taken, actual->not taken
 		EX_condFlag = 1'b0; //branch evaluates to not taken
 		//Expected Results:
@@ -36,6 +44,9 @@ module testbranchHandler();
 		//reset = 1
 		//newPC = EX_PC
 		#10 
+		clk = 1'b0;
+		#1
+		clk = 1'b1;
 		//Test Case 3: predict->not taken, actual->taken
 		prediction = 1'b0; 
 		EX_condFlag = 1'b1; 
