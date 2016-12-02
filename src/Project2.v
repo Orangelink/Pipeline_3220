@@ -3,13 +3,13 @@
 // Description     : A single-cycle processor
 // Author          : Lucas Christian and Joon Choi
 //
-module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
+module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N);
    input  [9:0] SW;
    input  [3:0] KEY;
    input  CLOCK_50;
    input  FPGA_RESET_N;
    output [9:0] LEDR;
-   output [6:0] HEX0,HEX1,HEX2,HEX3;
+   output [6:0] HEX0,HEX1,HEX2,HEX3,HEX4,HEX5;
 
    parameter DBITS         				 = 32;
    parameter INST_SIZE      			 = 32'd4;
@@ -88,45 +88,61 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	
 	//IF
 	wire IF_wrt_en;
-	wire[DBITS*2 - 1: 0] IF_in, IF_out;
+	assign IF_wrt_en = 1;
+	wire[DBITS*3 - 1 + 1: 0] IF_in, IF_out;
+	//IF PC + imm
+	assign IF_in[DBITS*3 -1  + 1: DBITS * 2 + 1] = brBaseOffset;
 	//IF PC
-	assign IF_in[DBITS*2 - 1:DBITS] = pcIncremented;
+	assign IF_in[DBITS*2 - 1 + 1:DBITS + 1] = pcIncremented;
 	//IF instWord
-	assign IF_in[DBITS -1:0] = instWord;
+	assign IF_in[DBITS -1 + 1:1] = instWord;
+	//prediction
+	assign IF_in[0] = prediction;
 	
-	Register #(DBITS * 2, 0) IFreg(clk, reset, IF_wrt_en, IF_in, IF_out);
+	Register #(DBITS * 3 + 1, 0) IFreg(clk, resetReg, IF_wrt_en, IF_in, IF_out);
 	
+	//IF our br base offset
+	wire[DBITS - 1:0] IF_brBaseOffset;
+	assign IF_brBaseOffset = IF_out[DBITS*3 + 1 - 1:DBITS * 2 + 1];
 	//IF out pc
 	wire [DBITS - 1:0] IF_pcout;
-	assign IF_pcout = IF_out[DBITS*2 - 1:DBITS];
+	assign IF_pcout = IF_out[DBITS*2 + 1 - 1:DBITS + 1];
 	//IF out instWord
 	wire[DBITS - 1:0] IF_instWord;
-	assign IF_instWord = IF_out[DBITS - 1:0];
+	assign IF_instWord = IF_out[DBITS - 1 + 1:1];
 	assign DEC_op = IF_instWord[DBITS-1:DBITS-4];
 	assign DEC_func = IF_instWord[DBITS-5:DBITS-8];
+	//IF prediction
+	wire IF_prediction;
+	assign IF_prediction = IF_out[0];
 	
 	//DECODE
 	//TODO: add opcode and func values to pass to rest of stages for use with controller
 	wire DEC_wrt_en;
-	wire[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : 0] DEC_in, DEC_out;
+	assign DEC_wrt_en = 1;
+	wire[DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : 0] DEC_in, DEC_out;
+	//DEC brBaseOffset
+	assign DEC_in[DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS *4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = IF_brBaseOffset;
 	//DEC PC
-	assign DEC_in[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS *3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = IF_pcout;
+	assign DEC_in[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS *3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = IF_pcout;
 	//DEC signex
-	assign DEC_in[DBITS * 3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = immval;
+	assign DEC_in[DBITS * 3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = immval;
 	//DEC regData1
-	assign DEC_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = regData1;
+	assign DEC_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = regData1;
 	//DEC regData2
-	assign DEC_in[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2] = regData2;
+	assign DEC_in[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 +1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 +1 + 1 + 1 + 2] = regData2;
 	//DEC src_reg1
-	assign DEC_in[REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 2] = rs1;
+	assign DEC_in[REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 1 + 2] = rs1;
 	//DEC src_reg2
-	assign DEC_in[REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 1 + (4*2) + 1 + 1 + 1 + 2] = rs2;
+	assign DEC_in[REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 1 + (4*2) + 1 + 1 + 1 + 1 + 2] = rs2;
 	//DEC dst_reg
-	assign DEC_in[REG_INDEX_BIT_WIDTH + (4*2) + 1 + 1 + 2 : (4*2) + 1 + 1 + 1 + 2] = rd;
+	assign DEC_in[REG_INDEX_BIT_WIDTH + (4*2) + 1 + 1 + 1 + 2 : (4*2) + 1 + 1 + 1 + 1 + 2] = rd;
 	//EX OP
-	assign DEC_in[(4*2) + 1 + 1 + 2 : 4 + 1 + 1 + 1 + 2] = opcode;
+	assign DEC_in[(4*2) + 1 + 1 + 1 + 2 : 4 + 1 + 1 + 1 + 1 + 2] = opcode;
 	//EX FUNC
-	assign DEC_in[4 + 1 + 1 + 2 : 1 + 1 + 1 + 2] = func;
+	assign DEC_in[4 + 1 + 1 + 1 + 2 : 1 + 1 + 1 + 1 + 2] = func;
+	//DEC prediction
+	assign DEC_in[1 + 1 + 1 + 2] = IF_prediction;
 	//DEC wrReg
 	assign DEC_in[1+1+2] = wrReg;
 	//DEC wrMem
@@ -136,8 +152,11 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//DEC alu2srcsel
 	assign DEC_in[1:0] = alu2MuxSel;
 	
-	Register #((DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2), 0) DECreg(clk, reset, DEC_wrt_en, DEC_in, DEC_out);
+	Register #((DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2), 0) DECreg(clk, resetReg, DEC_wrt_en, DEC_in, DEC_out);
 	
+	//DEC out brBaseOffset
+	wire[DBITS-1:0] DEC_brBaseOffset;
+	assign DEC_brBaseOffset = DEC_out[DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
 	//DEC out PC
 	wire[DBITS - 1:0] DEC_pc;
 	assign DEC_pc = DEC_out[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS*3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
@@ -165,6 +184,9 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	//EX func
 	wire[3:0] DEC_func;
 	assign EX_func = DEC_out[(4) + 1 + 1 + 2 : 1 + 1 + 1 + 2];
+	//DEC prediction
+	wire DEC_prediction;
+	assign DEC_prediction = DEC_out[1 + 1 + 1 + 2];
 	//DEC wrReg
 	wire DEC_wrReg;
 	assign DEC_wrReg = DEC_out[1+1+2];
@@ -180,6 +202,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	
 	//EXECUTE
 	wire EX_wrt_en;
+	assign EX_wrt_en = 1;
 	wire[8 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 0] EX_in, EX_out;
 	assign EX_in[4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_func;
 	assign EX_in[ 4 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_op;
@@ -228,6 +251,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
 	
 	//MEMORY register
 	wire ME_wrt_en;
+	assign ME_wrt_en = 1;
 	wire[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH:0] ME_in, ME_out;
 	assign ME_in[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH:5 + DBITS + REG_INDEX_BIT_WIDTH] = ME_op;
 	assign ME_in[4 + DBITS + REG_INDEX_BIT_WIDTH:1 + DBITS + REG_INDEX_BIT_WIDTH] = ME_func;
@@ -278,6 +302,8 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    SevenSeg hex1Disp(hex[7:4], HEX1);
    SevenSeg hex2Disp(hex[11:8], HEX2);
    SevenSeg hex3Disp(hex[15:12], HEX3);
+   SevenSeg hex4Disp(pcOut[3:0], HEX4);
+   SevenSeg hex5Disp(pcOut[7:4], HEX5);
 
    // Create PC and its logic
    Register #(DBITS, START_PC) pc(clk, reset, 1'b1, pcIn, pcOut);
@@ -286,16 +312,25 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,CLOCK_50,FPGA_RESET_N);
    Adder #(DBITS) pcIncrementer(pcOut, 32'd4, pcIncremented);
 
    // BR/JAL base + offset calculation
+	//TODO: change this to work with pipeline. Specifically JAL needs work
    Multiplexer2bit #(DBITS) brBaseMux(pcIncremented, regData1, brBaseMuxSel, brBase);
    Adder #(DBITS) brOffsetAdder(brBase, instOffset, brBaseOffset);
 
    // Take branch if allowed AND condition flag is true
 	// DEAL WITH BRANCH PREDICTION STUFF HERE
-	//replace condflag with prediction, probably
+	// replace condflag with prediction, probably
 	wire prediction;
-	GShare branchPredictor(pcOut, (DEC_pc - 4), clk, allowBr, update, condFlag, prediction)
-   assign takeBr = prediction;
-   Multiplexer2bit #(DBITS) nextPcMux(pcIncremented, brBaseOffset, takeBr, pcIn);
+	GShare branchPredictor(pcOut, (DEC_pc - 4), clk, allowBr, update, condFlag, prediction);
+   assign takeBr = prediction & allowBr;
+	wire [DBITS-1:0] pcIntermediate;
+   Multiplexer2bit #(DBITS) nextPcMux1(pcIncremented, brBaseOffset, takeBr, pcIntermediate);
+	Multiplexer2bit #(DBITS) nextPcMux2(newBrPC, pcIntermediate, correct, pcIn);
+
+	
+	//branch handler
+	//use correct in mux, use update for branch predictor
+	wire correct, update;
+	branchHandler (DEC_brBaseOffset, DEC_pc, EX_opcode, condFlag, DEC_prediction, correct, resetReg, update, clk, newBrPC);
 
    // Create instruction memory
    InstMemory #(IMEM_INIT_FILE, IMEM_ADDR_BIT_WIDTH, IMEM_DATA_BIT_WIDTH)
