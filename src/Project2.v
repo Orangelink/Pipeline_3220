@@ -89,201 +89,74 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
 	//IF
 	wire IF_wrt_en;
 	assign IF_wrt_en = 1;
-	wire[DBITS*3 - 1 + 1: 0] IF_in, IF_out;
-	//IF PC + imm
-	assign IF_in[DBITS*3 -1  + 1: DBITS * 2 + 1] = brBaseOffset;
-	//IF PC
-	assign IF_in[DBITS*2 - 1 + 1:DBITS + 1] = pcIncremented;
-	//IF instWord
-	assign IF_in[DBITS -1 + 1:1] = instWord;
-	//prediction
-	assign IF_in[0] = prediction;
 	
-	Register #(DBITS * 3 + 1, 0) IFreg(clk, resetReg, IF_wrt_en, IF_in, IF_out);
-	
-	//IF our br base offset
 	wire[DBITS - 1:0] IF_brBaseOffset;
-	assign IF_brBaseOffset = IF_out[DBITS*3 + 1 - 1:DBITS * 2 + 1];
-	//IF out pc
 	wire [DBITS - 1:0] IF_pcout;
-	assign IF_pcout = IF_out[DBITS*2 + 1 - 1:DBITS + 1];
-	//IF out instWord
 	wire[DBITS - 1:0] IF_instWord;
-	assign IF_instWord = IF_out[DBITS - 1 + 1:1];
 	assign DEC_op = IF_instWord[DBITS-1:DBITS-4];
 	assign DEC_func = IF_instWord[DBITS-5:DBITS-8];
-	//IF prediction
 	wire IF_prediction;
-	assign IF_prediction = IF_out[0];
+	
+	IFreg IFreg0(IF_wrt_en, resetReg, clk, brBaseOffset, pcIncremented, instWord, prediction,
+				 IF_brBaseOffset, IF_pcout, IF_instWord, IF_prediction);
 	
 	//DECODE
-	//TODO: add opcode and func values to pass to rest of stages for use with controller
 	wire DEC_wrt_en;
 	assign DEC_wrt_en = 1;
-	wire[DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : 0] DEC_in, DEC_out;
-	//DEC brBaseOffset
-	assign DEC_in[DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS *4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = IF_brBaseOffset;
-	//DEC PC
-	assign DEC_in[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS *3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = IF_pcout;
-	//DEC signex
-	assign DEC_in[DBITS * 3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = immval;
-	//DEC regData1
-	assign DEC_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2] = regData1;
-	//DEC regData2
-	assign DEC_in[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 +1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 +1 + 1 + 1 + 2] = regData2;
-	//DEC src_reg1
-	assign DEC_in[REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 1 + 2] = rs1;
-	//DEC src_reg2
-	assign DEC_in[REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 1 + (4*2) + 1 + 1 + 1 + 1 + 2] = rs2;
-	//DEC dst_reg
-	assign DEC_in[REG_INDEX_BIT_WIDTH + (4*2) + 1 + 1 + 1 + 2 : (4*2) + 1 + 1 + 1 + 1 + 2] = rd;
-	//EX OP
-	assign DEC_in[(4*2) + 1 + 1 + 1 + 2 : 4 + 1 + 1 + 1 + 1 + 2] = opcode;
-	//EX FUNC
-	assign DEC_in[4 + 1 + 1 + 1 + 2 : 1 + 1 + 1 + 1 + 2] = func;
-	//DEC prediction
-	assign DEC_in[1 + 1 + 1 + 2] = IF_prediction;
-	//DEC wrReg
-	assign DEC_in[1+1+2] = wrReg;
-	//DEC wrMem
-	assign DEC_in[1+2] = wrMem;
-	//DEC ME_mux_sel
-	assign DEC_in[2] = MEM_Mux_sel;
-	//DEC alu2srcsel
-	assign DEC_in[1:0] = alu2MuxSel;
-	
-	Register #((DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2), 0) DECreg(clk, resetReg, DEC_wrt_en, DEC_in, DEC_out);
-	
-	//DEC out brBaseOffset
 	wire[DBITS-1:0] DEC_brBaseOffset;
-	assign DEC_brBaseOffset = DEC_out[DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
-	//DEC out PC
 	wire[DBITS - 1:0] DEC_pc;
-	assign DEC_pc = DEC_out[DBITS*4 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS*3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
-	//DEC out signex
 	wire [DBITS - 1:0] DEC_immval;
-	assign DEC_immval = DEC_out[DBITS*3 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
-	//DEC regdata1
 	wire [DBITS - 1:0] DEC_regData1;
-	assign DEC_regData1 = DEC_out[DBITS*2 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
-	//DEC regdata2
 	wire [DBITS - 1:0] DEC_regData2;
-	assign DEC_regData2 = DEC_out[DBITS + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 2];
-	//DEC src_reg1
 	wire [REG_INDEX_BIT_WIDTH - 1:0] DEC_rs1;
-	assign DEC_rs1 = DEC_out[REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 1 + 2];
-	//DEC src_reg2
 	wire [REG_INDEX_BIT_WIDTH - 1:0] DEC_rs2;
-	assign DEC_rs2 = DEC_out[REG_INDEX_BIT_WIDTH * 2 + (4*2) + 1 + 1 + 2 : REG_INDEX_BIT_WIDTH * 1 + (4*2) + 1 + 1 + 1 + 2];
-	//DEC dst_reg
 	wire [REG_INDEX_BIT_WIDTH - 1:0] DEC_rd;
-	assign DEC_rd = DEC_out[REG_INDEX_BIT_WIDTH + (4*2) + 1 + 1 + 2 : (4*2) + 1 + 1 + 1 + 2];
-	//EX Op
 	wire[3:0] DEC_op;
-	assign EX_op = DEC_out[(4*2) + 1 + 1 + 2 : (4) + 1 + 1 + 1 + 2];
-	//EX func
 	wire[3:0] DEC_func;
-	assign EX_func = DEC_out[(4) + 1 + 1 + 2 : 1 + 1 + 1 + 2];
-	//DEC prediction
 	wire DEC_prediction;
-	assign DEC_prediction = DEC_out[1 + 1 + 1 + 2];
-	//DEC wrReg
 	wire DEC_wrReg;
-	assign DEC_wrReg = DEC_out[1+1+2];
-	//DEC wrMem
 	wire DEC_wrMem;
-	assign DEC_wrMem = DEC_out[1+2];
-	//DEC MEM_Mux_sel
 	wire DEC_ME_mux_sel;
-	assign DEC_ME_mux_sel = DEC_out[2];
-	//DEC alu2srcsel
-	wire[1:0] DEC_alu2MuxSel;
-	assign DEC_alu2MuxSel = DEC_out[1:0];
+	wire[1:0] DEC_alu2MuxSel;	
+	Register #((DBITS*5 + REG_INDEX_BIT_WIDTH * 3 + (4*2) + 1 + 1 + 1 + 1 + 2), 0) DECreg(clk, resetReg, DEC_wrt_en, DEC_in, DEC_out);
+	DECreg DECreg0(DEC_wrt_en, resetReg, clk, IF_brBaseOffset, IF_pcout, immval, regData1, regData2,
+					rs1, rs2, rd, opcode, func, IF_prediction, wrReg, wrMem, MEM_Mux_sel,
+					alu2Muxsel, DEC_brBaseOffset, DEC_pc, DEC_immval, DEC_regData1, DEC_regData2,
+					DEC_rs1, DEC_rs2, DEC_rd, EX_op, EX_func, DEC_prediction, DEC_wrReg, DEC_wrMem, DEC_ME_Mux_sel,
+					DEC_alu2Muxsel);
+
 	
 	//EXECUTE
 	wire EX_wrt_en;
-	assign EX_wrt_en = 1;
-	wire[8 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 0] EX_in, EX_out;
-	assign EX_in[4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_func;
-	assign EX_in[ 4 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_op;
-	assign EX_in[DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = regData2; 
-	assign EX_in[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1] = EX_intermediateResult;
-	assign EX_in[REG_INDEX_BIT_WIDTH * 2 + 1 + 1:REG_INDEX_BIT_WIDTH * 1 + 1 + 1 + 1] = DEC_rs2;
-	assign EX_in[REG_INDEX_BIT_WIDTH * 1 + 1 + 1: 1 + 1 + 1] = DEC_rd; 
-	assign EX_in[1 + 1] = DEC_ME_mux_sel;
-	assign EX_in[1] = DEC_wrReg;
-	assign EX_in[0] = DEC_wrMem;
-	Register #((4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 + 1 + 1), 0) EXreg(clk, reset, EX_wrt_en, EX_in, EX_out);
-	
-	//ME_op
 	wire[3:0] ME_op;
-	assign ME_op = EX_out[4 * 2 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 5 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
-	//ME_func
 	wire[3:0] ME_func;
-	assign ME_func = EX_out[4 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1 : 1 + DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
-
-	//EX_regdata2
 	wire[DBITS-1:0] EX_regData2;
-	assign EX_regData2 = EX_out[DBITS * 2 + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
-	//EX_aluResult
 	wire [DBITS-1:0] EX_aluResult;
-	assign EX_aluResult = EX_out[DBITS + REG_INDEX_BIT_WIDTH * 2 + 1 + 1: REG_INDEX_BIT_WIDTH * 2 + 1 + 1 + 1];
-	
-	//EX_rs2
 	wire [REG_INDEX_BIT_WIDTH-1:0] EX_rs2;
-	assign EX_rs2 = EX_out[REG_INDEX_BIT_WIDTH * 2 + 1 + 1:REG_INDEX_BIT_WIDTH * 1 + 1 + 1 + 1];
-
-	//EX_rd
 	wire [REG_INDEX_BIT_WIDTH-1:0] EX_rd;
-	assign EX_rd = EX_out[REG_INDEX_BIT_WIDTH * 1 + 1 + 1: 1 + 1 + 1];
-	
-	//EX_ME_mux_sel
 	wire EX_ME_mux_sel;
-	assign EX_ME_mux_sel = EX_out[1 + 1];
-	
-	//EX_wrReg
 	wire EX_wrReg;
-	assign EX_wrReg = EX_out[1];
-	
-	//EX_wrMem
 	wire EX_wrMem;
-	assign EX_wrMem = EX_out[0]; 
+	EXreg(EX_wrt_en, reset, clk, EX_func, EX_op, DEC_regData2, EX_intermediateResult, DEC_rs2, DEC_rd, ME_mux_sel, DEC_wrReg, DEC_wrMem,
+				 ME_func, ME_op, EX_regData2, EX_aluResult, EX_rs2, EX_rd, EX_ME_mux_sel, EX_wrReg, EX_wrMem);
+	
 	
 	//MEMORY register
 	wire ME_wrt_en;
 	assign ME_wrt_en = 1;
-	wire[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH:0] ME_in, ME_out;
-	assign ME_in[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH:5 + DBITS + REG_INDEX_BIT_WIDTH] = ME_op;
-	assign ME_in[4 + DBITS + REG_INDEX_BIT_WIDTH:1 + DBITS + REG_INDEX_BIT_WIDTH] = ME_func;
-	assign ME_in[DBITS + REG_INDEX_BIT_WIDTH: REG_INDEX_BIT_WIDTH + 1] = MEM_result;
-	assign ME_in[REG_INDEX_BIT_WIDTH: 1] = EX_rd;
-	assign ME_in[0] = EX_wrReg; 
-	Register #((DBITS + REG_INDEX_BIT_WIDTH + 2 + (4 * 2)), 0) MEreg(clk, reset, ME_wrt_en, ME_in, ME_out);
-	
-	//ME_op
 	wire [3:0] WB_op;
-	assign WB_op = ME_out[4 * 2 + DBITS + REG_INDEX_BIT_WIDTH:5 + DBITS + REG_INDEX_BIT_WIDTH];
-	//ME_func
 	wire[3:0] WB_func;
-	assign WB_func = ME_out[4 + DBITS + REG_INDEX_BIT_WIDTH:1 + DBITS + REG_INDEX_BIT_WIDTH];
-	//ME_MEM_result
 	wire [DBITS-1:0] ME_MEM_result;
-	assign ME_MEM_result = ME_out[DBITS + REG_INDEX_BIT_WIDTH: REG_INDEX_BIT_WIDTH + 1];
-	
-	//ME_EX_rd
 	wire [REG_INDEX_BIT_WIDTH-1:0] ME_rd; 
-	assign ME_rd = ME_out[REG_INDEX_BIT_WIDTH: 1];
-	
-	//ME_EX_wrReg
 	wire ME_wrReg;
-	assign ME_wrReg = ME_out[0]; 
-	
+	MEreg(ME_wrt_en, reset, clk, ME_op, ME_func, MEM_result, EX_rd, EX_wrReg,
+				 WB_func, WB_op, ME_MEM_result, ME_rd, ME_wrReg);
 	
    // Clock divider and reset
    assign reset = ~FPGA_RESET_N;
    // We run at around 25 MHz. Timing analyzer estimates the design can support
    // around 33 MHz if we really wanted to
-   ClockDivider	#(32, 1'b0) clk_divider(CLOCK_50, 1'b0, clk);
+   ClockDivider	#(6, 1'b0) clk_divider(CLOCK_50, 1'b0, clk);
    
    //debounce SW
    Debouncer SW0(clk, SW[0], debounced_SW[0]);
@@ -302,8 +175,8 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
    SevenSeg hex1Disp(hex[7:4], HEX1);
    SevenSeg hex2Disp(hex[11:8], HEX2);
    SevenSeg hex3Disp(hex[15:12], HEX3);
-   SevenSeg hex4Disp(pcOut[3:0], HEX4);
-   SevenSeg hex5Disp(pcOut[7:4], HEX5);
+   SevenSeg hex4Disp(pcIn[3:0], HEX4);
+   SevenSeg hex5Disp(pcIn[7:4], HEX5);
 
    // Create PC and its logic
    Register #(DBITS, START_PC) pc(clk, reset, 1'b1, pcIn, pcOut);
