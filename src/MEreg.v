@@ -10,10 +10,10 @@ module MEreg(wrt_en, reset, clk, op, func, result, rd, wrReg,
 	input [REG_INDEX_BIT_WIDTH-1:0] rd; 
 	input wrReg;
 	
-	output reg[3:0] ME_func, ME_op;
-	output reg[DBITS-1:0] ME_result;
-	output reg[REG_INDEX_BIT_WIDTH-1:0] ME_rd;
-	output reg ME_wrReg;
+	output [3:0] ME_func, ME_op;
+	output [DBITS-1:0] ME_result;
+	output [REG_INDEX_BIT_WIDTH-1:0] ME_rd;
+	output ME_wrReg;
 	
 	Register #(4, 0) opReg(clk, reset, wrt_en, op, ME_op);
 	Register #(4, 0) funcReg(clk, reset, wrt_en, func, ME_func);
