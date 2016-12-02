@@ -283,7 +283,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
    assign reset = ~FPGA_RESET_N;
    // We run at around 25 MHz. Timing analyzer estimates the design can support
    // around 33 MHz if we really wanted to
-   ClockDivider	#(1, 1'b0) clk_divider(CLOCK_50, 1'b0, clk);
+   ClockDivider	#(32, 1'b0) clk_divider(CLOCK_50, 1'b0, clk);
    
    //debounce SW
    Debouncer SW0(clk, SW[0], debounced_SW[0]);
