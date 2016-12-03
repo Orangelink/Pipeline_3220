@@ -15,8 +15,8 @@ module EXreg(wrt_en, reset, clk, EX_func, EX_op, regData2, intermediateResult, r
 	output[REG_INDEX_BIT_WIDTH-1:0] EX_rs2, EX_rd;
 	output EX_ME_mux_sel, EX_wrReg, EX_wrMem;
 	
-	Register #(4,0) funcReg(clk, reset, wrt_en, func, ME_func); 
-	Register #(4,0) opReg(clk, reset, wrt_en, op, ME_op);
+	Register #(4,0) funcReg(clk, reset, wrt_en, EX_func, ME_func); 
+	Register #(4,0) opReg(clk, reset, wrt_en, EX_op, ME_op);
 	Register #(DBITS,0) regData2Reg(clk, reset, wrt_en, regData2, EX_regData2); 
 	Register #(DBITS,0) intermediateResultReg(clk, reset, wrt_en, intermediateResult, EX_intermediateResult);
 	Register #(REG_INDEX_BIT_WIDTH,0) rs2Reg(clk, reset, wrt_en, rs2, EX_rs2);

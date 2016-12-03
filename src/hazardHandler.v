@@ -1,3 +1,4 @@
+`define JAL 4'b0110
 
 module hazardHandler(IF_op, pcImm, DEC_op, IF_pc, IF_stall);
 	parameter DBITS = 32;

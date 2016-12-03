@@ -8,8 +8,8 @@ module GshareTest();
 	wire prediction;
 	GShare GShare1(predictPc, updatePc, clk, predict, update, reality, prediction);
 	initial begin
-		predictPc <= `ZERO;
-		updatePc <= `ZERO;
+		predictPc <= `ONE;
+		updatePc <= `ONE;
 		clk <= 0;
 		predict <= 0;
 		update <= 0;
