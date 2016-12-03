@@ -120,9 +120,9 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
 	wire[1:0] DEC_alu2MuxSel;	
 	DECreg DECreg0(DEC_wrt_en, resetReg, clk, IF_brBaseOffset, IF_pcout, immval, regData1, regData2,
 					rs1, rs2, rd, opcode, func, IF_prediction, wrReg, wrMem, MEM_Mux_sel,
-					alu2Muxsel, DEC_brBaseOffset, DEC_pc, DEC_immval, DEC_regData1, DEC_regData2,
-					DEC_rs1, DEC_rs2, DEC_rd, EX_op, EX_func, DEC_prediction, DEC_wrReg, DEC_wrMem, DEC_ME_Mux_sel,
-					DEC_alu2Muxsel);
+					alu2MuxSel, DEC_brBaseOffset, DEC_pc, DEC_immval, DEC_regData1, DEC_regData2,
+					DEC_rs1, DEC_rs2, DEC_rd, EX_op, EX_func, DEC_prediction, DEC_wrReg, DEC_wrMem, DEC_ME_mux_sel,
+					DEC_alu2MuxSel);
 
 	
 	//EXECUTE
@@ -136,7 +136,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
 	wire EX_ME_mux_sel;
 	wire EX_wrReg;
 	wire EX_wrMem;
-	EXreg(EX_wrt_en, reset, clk, EX_func, EX_op, DEC_regData2, EX_intermediateResult, DEC_rs2, DEC_rd, ME_mux_sel, DEC_wrReg, DEC_wrMem,
+	EXreg EXreg0(EX_wrt_en, reset, clk, EX_func, EX_op, DEC_regData2, EX_intermediateResult, DEC_rs2, DEC_rd, DEC_ME_mux_sel, DEC_wrReg, DEC_wrMem,
 				 ME_func, ME_op, EX_regData2, EX_aluResult, EX_rs2, EX_rd, EX_ME_mux_sel, EX_wrReg, EX_wrMem);
 	
 	
@@ -148,7 +148,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
 	wire [DBITS-1:0] ME_MEM_result;
 	wire [REG_INDEX_BIT_WIDTH-1:0] ME_rd; 
 	wire ME_wrReg;
-	MEreg(ME_wrt_en, reset, clk, ME_op, ME_func, MEM_result, EX_rd, EX_wrReg,
+	MEreg MEreg0(ME_wrt_en, reset, clk, ME_op, ME_func, MEM_result, EX_rd, EX_wrReg,
 				 WB_func, WB_op, ME_MEM_result, ME_rd, ME_wrReg);
 	
    // Clock divider and reset
@@ -178,7 +178,7 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
    SevenSeg hex5Disp(pcIn[7:4], HEX5);
 
    // Create PC and its logic
-   Register #(DBITS, START_PC) pc(clk, reset, 1'b1, pcIn, pcOut);
+   Register #(DBITS, START_PC) pc(clk, reset, IF_stall, pcIn, pcOut);
 
    // Increment the PC by 4 for use in several places
    Adder #(DBITS) pcIncrementer(pcOut, 32'd4, pcIncremented);
@@ -186,8 +186,26 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
    // BR/JAL base + offset calculation
 	//TODO: change this to work with pipeline. Specifically JAL needs work
    Multiplexer2bit #(DBITS) brBaseMux(pcIncremented, regData1, brBaseMuxSel, brBase);
-   Adder #(DBITS) brOffsetAdder(brBase, instOffset, brBaseOffset);
+   Adder #(DBITS) brOffsetAdder(brBase, IF_instOffset, brBaseOffset);
+	
+	//IF immediate
+	wire[15:0] IF_imm;
+	assign IF_imm = instWord[15:0];
+	wire[DBITS -1 :0] IF_immval;
+	wire[DBITS -1 :0] IF_instOffset;
+	SignExtension #(16, DBITS) IFimmSext(IF_immediate, IF_immval);
+	Shiftbit #(DBITS, 2) IFinstOffsetShift(IF_immval, IF_instOffset);
 
+	// Sign extend the immediate value
+   SignExtension #(16, DBITS) immSext(immediate, immval);
+
+   // Instruction offset for use in BR/JAL calculations
+   Shiftbit #(DBITS, 2) instOffsetShift(immval, instOffset);
+	
+	//deal with JAL hazard
+	wire IF_stall;
+	hazardHandler handler0(IF_op, pcIncremented, DEC_op, IF_pcout, IF_stall);
+	
    // Take branch if allowed AND condition flag is true
 	// DEAL WITH BRANCH PREDICTION STUFF HERE
 	// replace condflag with prediction, probably
@@ -211,12 +229,6 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
 
    // Instruction decoder splits out all pertinent fields
    Decoder #(IMEM_DATA_BIT_WIDTH) decoder(IF_instWord, opcode, func, rd, rs1, rs2, immediate);
-
-   // Sign extend the immediate value
-   SignExtension #(16, DBITS) immSext(immediate, immval);
-
-   // Instruction offset for use in BR/JAL calculations
-   Shiftbit #(DBITS, 2) instOffsetShift(immval, instOffset);
 
    // Controller examines opcode, func, and ALU condition to generate control signals
    PipelineController controller(
@@ -273,12 +285,10 @@ module Project2(SW,KEY,LEDR,HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,CLOCK_50,FPGA_RESET_N)
    // KEYS, SWITCHES, HEXS, and LEDS are memory mapped IO
 
 	//NEW PIPELINE MUX
-	//TODO: logic for MEM_Mux_sel-- probably needs to be handled in controller
 	wire[DBITS -1 :0] MEM_result;
 	Multiplexer2bit #(DBITS) ME_Mux(EX_aluResult, dataMemOut, MEM_Mux_sel, MEM_result);
 	
-	//TODO: Writeback Logic
-	//Need to funnel this information back to register file and to prior stages. Controller handled probably
+	//Writeback Logic
 	wire[DBITS - 1:0] WB_data;
 	wire[REG_INDEX_BIT_WIDTH-1 : 0] WB_reg;
 	assign WB_data = ME_MEM_result;
