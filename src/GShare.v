@@ -6,6 +6,10 @@ module GShare(predictPc, updatePc, clk, predict, update, reality, prediction);
 	output prediction;
 	reg[1:0] predictionReg;
 	assign prediction = predictionReg[1];
+	wire[11:0] predictPcIndex;
+	assign predictPcIndex = predictPc[11:0];
+	wire[11:0] updatePcIndex;
+	assign updatePcIndex = updatePc[11:0];
 	
 	reg[1:0] lookup [0:tableLength - 1];
 	reg[11:0] gHistory;
@@ -16,22 +20,22 @@ module GShare(predictPc, updatePc, clk, predict, update, reality, prediction);
 			lookup[i] <= 2'b10;
 		end
 		predictionReg <= 2'b00;
-		gHistory <= 12'b000000000000;
+		gHistory <= 12'b0000000000000;
 	end
 	
 	always @ (posedge clk) begin
 		if (predict == 1) begin
-			predictionReg <= lookup[predictPc ^ gHistory];
+			predictionReg <= lookup[predictPcIndex ^ gHistory];
 		end
 		if (update == 1) begin
 			if (reality == 1) begin
-				if(lookup[updatePc ^ gHistory] < 3) begin
-					lookup[updatePc ^ gHistory] <= lookup[updatePc ^ gHistory] + 2'b01;
+				if(lookup[updatePcIndex ^ gHistory] < 3) begin
+					lookup[updatePcIndex ^ gHistory] <= lookup[updatePcIndex ^ gHistory] + 2'b01;
 				end
 			end
 			else if (reality == 0) begin
-				if(lookup[updatePc ^ gHistory] > 0) begin
-					lookup[updatePc ^ gHistory] <= lookup[updatePc ^ gHistory] - 2'b01;
+					if(lookup[updatePcIndex	^ gHistory] > 0) begin
+					lookup[updatePcIndex ^ gHistory] <= lookup[updatePcIndex ^ gHistory] - 2'b01;
 				end
 			end
 			gHistory[11:1] = gHistory[10:0];
