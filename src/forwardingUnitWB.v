@@ -12,7 +12,7 @@ module forwardingUnitWB(reg_index, reg_data, WB_opcode, WB_index, WB_data, data_
 	reg[(bitwidth - 1) : 0] out;
 	
 	always @ (*) begin
-		if (reg_index == WB_index && (WB_opcode != `BRANCH || WB_opcode != `SW))
+		if (reg_index == WB_index && (WB_opcode != `BRANCH && WB_opcode != `SW))
 			out = WB_data; 
 		else 
 			out = reg_data; 

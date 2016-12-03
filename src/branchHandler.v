@@ -2,35 +2,35 @@
 `define BRANCH 4'b0010
 `define TAKEN_NOT_SUPPOSED_TO 4'b00
 `define NOT_TAKEN_SUPPOSED_TO 4'b01
-module branchHandler (EX_PC_IMM, EX_PC, EX_opcode, EX_condFlag, prediction, correctOut, reset, update, clk, newPC);
+module branchHandler (clk, EX_PC_IMM, EX_PC, EX_opcode, EX_condFlag, prediction, correctOut, reset, update, newPC);
 							 
    parameter DBITS = 32;
 	parameter REG_INDEX_BIT_WIDTH = 4;
-
+	
+	input clk;
 	input [(DBITS - 1):0] EX_PC_IMM, EX_PC;
 	input [3:0] EX_opcode;
 	input EX_condFlag;
 	input prediction; 
-	input clk;
 	//correct's first bit determines if the prediction was correct
 	//correct's second bit determines what type of right/wrong prediction you had
 	output correctOut, update;
 	reg updateReg;
-	assign update = updateReg;
-	assign correctOut = correct[1];
-	
 	reg [1:0] correct; 
+
+	
 	output reset; 
-	assign reset = resetReg;
 	reg resetReg; 
+
 	output [(DBITS - 1):0] newPC; 
-	assign newPC = newPCReg;
 	reg [(DBITS - 1):0] newPCReg; 
+	assign newPC = newPCReg;
 	
 	initial begin
 		updateReg <= 0;
 		newPCReg <= 0;
 		resetReg <= 0;
+		correct <= 2'b00;
 	end
 	always @ (posedge clk) begin
 		if (EX_opcode == `BRANCH) begin
@@ -66,7 +66,8 @@ module branchHandler (EX_PC_IMM, EX_PC, EX_opcode, EX_condFlag, prediction, corr
 		end
 	end
 	
+	assign update = updateReg;
+	assign correctOut = correct[1];
+	assign reset = resetReg;
 
-	
-	
 endmodule

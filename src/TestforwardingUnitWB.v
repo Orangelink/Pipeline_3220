@@ -27,16 +27,16 @@ module TestforwardingUnitWB();
 		WB_data = `TWO; 
 		WB_opcode = `BRANCH; 
 		#10 
-		//TEST CASE 3: reg_index == WB_index
-		//Expected Output: 32'b00000000000000000000000000000010
+		//TEST CASE 3: reg_index == WB_index, but opcode is branch
+		//Expected Output: 32'b00000000000000000000000000000000
 		WB_index = 4'b0000; 
 		#10
 		//TEST CASE 5: opcode 1100
-		//Expected Output: 32'b00000000000000000000000000000000
+		//Expected Output: 32'b00000000000000000000000000000010
 		WB_opcode = `ADD;
 		#10
 		//TEST CASE 6: opcode 0011
-		//Expected Output: 32'b00000000000000000000000000000001
+		//Expected Output: 32'b00000000000000000000000000000000
 		WB_opcode = `SW; 
 		#10 $finsih; 
 		
