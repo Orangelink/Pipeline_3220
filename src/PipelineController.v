@@ -39,6 +39,7 @@
 `define BNEZ 4'b0001
 `define BGTEZ 4'b1110
 `define BGTZ 4'b1111
+
 module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
 								  EX_op, EX_func, ME_op, ME_func, WB_op, WB_func, 
 								  allowBr, brBaseMux, rs1Mux, rs2Mux, alu2Mux, 
@@ -76,10 +77,9 @@ module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
 		end
 	end
 	
-	
+	reg [2:0] DEC_output;
 	assign rs1Mux = DEC_output[2];
 	assign rs2Mux = DEC_output[1:0];
-	reg [2:0] DEC_output;
 	always @ (DEC_op) begin
 		if (DEC_op == `BRANCH) begin
 			DEC_output <= 3'b1_10;
@@ -90,18 +90,18 @@ module PipelineController(IF_op, IF_func, DEC_op, DEC_func,
 		else begin
 			DEC_output <= 3'b0_00;
 		end
-	end
-	
+	end	
 	
 //	assign alu2Mux = EX_output[9:8];
 //	assign aluOp = EX_output[7:4];
 //	assign cmpOp = EX_output[3:0];
+	reg [18:0] EX_output;
+
    assign alu2Mux = EX_output[13:12];
    assign aluOp = EX_output[11:8];
    assign cmpOp = EX_output[7:4];
 	wire[7:0] EX_inputSignals;
    assign EX_inputSignals = {{EX_op}, {EX_func}};
-	reg [18:0] EX_output;
 	always @ (EX_inputSignals) begin
       case (EX_inputSignals)
         8'b11000111: EX_output = 19'b0_0_0_00_00_0111_0000_1_0_00;
